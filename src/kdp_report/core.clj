@@ -1,8 +1,10 @@
 (ns kdp-report.core
-  (:require [dk.ative.docjure.spreadsheet :refer :all]))
+  (:require [dk.ative.docjure.spreadsheet :refer :all]
+            [clojure.pprint :refer :all] ))
 
 
-(def filename "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls")
+(def filename
+  "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls")
 
 ;date - determined by the filename
 ;country - tricky
@@ -21,18 +23,17 @@
                  "Amazon Kindle BR Store" "BRL"
                  "Amazon Kindle MX Store" "MXN"})
 
+(defn is-royalty-row? [rrow]
+  (boolean (re-find #"Total Royalty" (rrow :row-desc))))
 
+(defn is-header-row? [rrow]
+  (= "Title" (rrow :row-desc)))
 
+(defn is-nosales-row? [rrow]
+  (= "There were no sales during this period" (rrow :row-desc)))
 
-
-;the code...
-(defn is-royalty-row? [rrow] (boolean (re-find #"Total Royalty" (rrow :row-desc))))
-
-(defn is-header-row? [rrow] (= "Title" (rrow :row-desc)))
-
-(defn is-nosales-row? [rrow] (= "There were no sales during this period" (rrow :row-desc)))
-
-(defn is-report-row? [rrow] (boolean (re-find #"Sales report for the period" (rrow :row-desc))))
+(defn is-report-row? [rrow]
+  (boolean (re-find #"Sales report for the period" (rrow :row-desc))))
 
 (def ws (->> (load-workbook filename)
              (select-sheet "Reports")))
@@ -58,9 +59,23 @@
 (defn replace-first-with-currency [row]
   (assoc row 0 (currencies (:row-desc (first row)))) )
 
+(def curr-books-map (->> (map #(into [] %) trans-rows)
+                         (map replace-first-with-currency)))
 
-(->> (map #(into [] %) trans-rows)
-     (map replace-first-with-currency))
+(defn get-all [] (remove #(= "There were no sales during this period" (second %))
+                (partition 2
+                (flatten (for [row curr-books-map]
+                  (for [book (rest row)]
+                    [(first row) (book :row-desc)]))))))
+
+(get-all)
+
+(for [row curr-books-map]
+  (for [book (rest row)]
+    [(first row) book]))
+
+
+
 
 (+ 1 2)
 
