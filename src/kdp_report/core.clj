@@ -34,31 +34,33 @@
 
 (defn is-report-row? [rrow] (boolean (re-find #"Sales report for the period" (rrow :row-desc))))
 
-
-
-
 (def ws (->> (load-workbook filename)
              (select-sheet "Reports")))
 
-(def ws-seq (drop-last 6
-              (remove is-report-row?
-                ;(remove is-nosales-row?
-                  (remove is-header-row?
-                    (remove is-royalty-row?
-                      (filter #(some? (%1 :row-desc)) ;filter out if nothing in first col
-                            (select-columns
-                              {:A :row-desc, :C :asin,  :D :units, :G :royalty, :I :list-price, :M :royalty-paid} ws)))))))
+(def ws-seq
+  (drop-last 6
+    (remove is-report-row?
+      (remove is-header-row?
+        (remove is-royalty-row?
+          (filter #(some? (%1 :row-desc)) ;filter out if nothing in first col
+            (select-columns
+              {:A :row-desc, :C :asin,  :D :units, :G :royalty, :I :list-price, :M :royalty-paid} ws)))))))
 
 
-(def section? (comp #(contains? currencies %) :row-desc))
+(def section?
+  (comp #(contains? currencies %) :row-desc))
 
-(map flatten (partition 2
-           (partition-by  section? ws-seq)))
+(def trans-rows
+  (map flatten
+       (partition 2
+                  (partition-by  section? ws-seq))))
+
+(defn replace-first-with-currency [row]
+  (assoc row 0 (currencies (:row-desc (first row)))) )
 
 
+(->> (map #(into [] %) trans-rows)
+     (map replace-first-with-currency))
 
-
-
-
-
+(+ 1 2)
 
