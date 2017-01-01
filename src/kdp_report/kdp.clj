@@ -1,7 +1,8 @@
-(ns kdp-report.core
+(ns kdp-report.kdp
   (:require [dk.ative.docjure.spreadsheet :refer :all]
             [clojure.pprint :refer :all] ))
 
+;download 'prior months royalties one by one'
 
 (def filenames
   ["/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls"
@@ -16,10 +17,6 @@
    "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-10-2016-1479748641878-49ecf7cf74852ad18001bc12d9788161.xlsx"
    "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-11-2016-1482242511043-699037402df131d60bfb9ef6023b6d9c.xlsx"
    ])
-
-
-;date - determined by the filename
-
 
 (def currencies {"Amazon Kindle US Store" "USD"
                  "Amazon Kindle UK Store" "GBP"
@@ -66,7 +63,6 @@
                (remove nil?
                  (select-columns
                    {:A :row-desc, :C :asin,  :D :units, :G :royalty, :I :list-price, :M :royalty-paid} (ws filename))))))))))
-s
 
 (def section?
   (comp #(contains? currencies %) :row-desc))
@@ -94,17 +90,10 @@ s
               [(first row) (book :row-desc)])))))))
 
 (def all-kdp (partition 2
-                        (flatten
-                          (map get-all filenames))))
+                (flatten
+                  (map get-all filenames))))
 
 (group-by second all-kdp)
 
 
-; -----------------
-
-(get-all "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls")
-
-
-
-(+ 1 2)
 
