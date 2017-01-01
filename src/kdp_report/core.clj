@@ -3,11 +3,23 @@
             [clojure.pprint :refer :all] ))
 
 
-(def filename
-  "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls")
+(def filenames
+  ["/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-2-2016.xls"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-3-2016.xls"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-4-2016.xls"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-5-2016.xls"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-6-2016.xls"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-7-2016.xls"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-08-2016-1479749593121-efe96ea153478e0814a09f54e3184f79.xlsx"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-09-2016-1479749586926-f88c1bff260960ac54d1c5e30e59c834.xlsx"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-10-2016-1479748641878-49ecf7cf74852ad18001bc12d9788161.xlsx"
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-11-2016-1482242511043-699037402df131d60bfb9ef6023b6d9c.xlsx"
+   ])
+
 
 ;date - determined by the filename
-;country - tricky
+
 
 (def currencies {"Amazon Kindle US Store" "USD"
                  "Amazon Kindle UK Store" "GBP"
@@ -33,47 +45,64 @@
   (= "There were no sales during this period" (rrow :row-desc)))
 
 (defn is-report-row? [rrow]
-  (boolean (re-find #"Sales report for the period" (rrow :row-desc))))
+  (boolean
+    (re-find #"Sales report for the period" (rrow :row-desc))))
 
-(def ws (->> (load-workbook filename)
-             (select-sheet "Reports")))
+(defn is-currency-row? [rrow]
+  (nil? (rrow :row-desc)))
 
-(def ws-seq
+(defn ws [filename]
+  (->> (load-workbook filename)
+       (select-sheet
+         (if (.endsWith filename ".xls") "Reports" "eBook Royalty Report"))))
+
+(defn ws-seq [filename]
   (drop-last 6
     (remove is-report-row?
       (remove is-header-row?
         (remove is-royalty-row?
-          (filter #(some? (%1 :row-desc)) ;filter out if nothing in first col
-            (select-columns
-              {:A :row-desc, :C :asin,  :D :units, :G :royalty, :I :list-price, :M :royalty-paid} ws)))))))
-
+          (remove is-currency-row?
+            (filter #(some? (%1 :row-desc)) ;filter out if nothing in first col
+               (remove nil?
+                 (select-columns
+                   {:A :row-desc, :C :asin,  :D :units, :G :royalty, :I :list-price, :M :royalty-paid} (ws filename))))))))))
+s
 
 (def section?
   (comp #(contains? currencies %) :row-desc))
 
-(def trans-rows
+(defn trans-rows [filename]
   (map flatten
-       (partition 2
-                  (partition-by  section? ws-seq))))
+     (partition 2
+       (partition-by  section? (ws-seq filename)))))
 
 (defn replace-first-with-currency [row]
   (assoc row 0 (currencies (:row-desc (first row)))) )
 
-(def curr-books-map (->> (map #(into [] %) trans-rows)
-                         (map replace-first-with-currency)))
+(defn curr-books-map [filename]
+  (->> (map #(into [] %) (trans-rows filename))
+       (map replace-first-with-currency)))
 
-(defn get-all [] (remove #(= "There were no sales during this period" (second %))
-                (partition 2
-                (flatten (for [row curr-books-map]
-                  (for [book (rest row)]
-                    [(first row) (book :row-desc)]))))))
+(defn get-all [filename]
+  ;(filter #(= "Rain of Clarity" (second %))
+  (remove #(= "There were no sales during this period" (second %))
+    (remove #(= "" (second %))
+      (partition 2
+        (flatten
+          (for [row (curr-books-map filename)]
+            (for [book (rest row)]
+              [(first row) (book :row-desc)])))))))
 
-(get-all)
+(def all-kdp (partition 2
+                        (flatten
+                          (map get-all filenames))))
 
-(for [row curr-books-map]
-  (for [book (rest row)]
-    [(first row) book]))
+(group-by second all-kdp)
 
+
+; -----------------
+
+(get-all "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls")
 
 
 
