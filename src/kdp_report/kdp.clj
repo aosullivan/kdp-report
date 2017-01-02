@@ -15,8 +15,7 @@
    "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-08-2016-1479749593121-efe96ea153478e0814a09f54e3184f79.xlsx"
    "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-09-2016-1479749586926-f88c1bff260960ac54d1c5e30e59c834.xlsx"
    "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-10-2016-1479748641878-49ecf7cf74852ad18001bc12d9788161.xlsx"
-   "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-11-2016-1482242511043-699037402df131d60bfb9ef6023b6d9c.xlsx"
-   ])
+   "/Users/adrian.osullivan/Dropbox/kdp/kdp-reports-11-2016-1482242511043-699037402df131d60bfb9ef6023b6d9c.xlsx"])
 
 (def currencies {"Amazon Kindle US Store" "USD"
                  "Amazon Kindle UK Store" "GBP"
@@ -54,15 +53,17 @@
          (if (.endsWith filename ".xls") "Reports" "eBook Royalty Report"))))
 
 (defn ws-seq [filename]
-  (drop-last 6
-    (remove is-report-row?
-      (remove is-header-row?
-        (remove is-royalty-row?
-          (remove is-currency-row?
-            (filter #(some? (%1 :row-desc)) ;filter out if nothing in first col
-               (remove nil?
-                 (select-columns
-                   {:A :row-desc, :C :asin,  :D :units, :G :royalty, :I :list-price, :M :royalty-paid} (ws filename))))))))))
+  (->>
+    (ws filename)
+    (select-columns
+      {:A :row-desc, :C :asin,  :D :units, :G :royalty, :I :list-price, :M :royalty-paid})
+    (remove nil?)
+    (filter #(some? (%1 :row-desc)))
+    (remove is-report-row?)
+    (remove is-header-row?)
+    (remove is-royalty-row?)
+    (remove is-currency-row?)
+    (drop-last 6)))
 
 (def section?
   (comp #(contains? currencies %) :row-desc))
@@ -70,7 +71,7 @@
 (defn trans-rows [filename]
   (map flatten
      (partition 2
-       (partition-by  section? (ws-seq filename)))))
+       (partition-by section? (ws-seq filename)))))
 
 (defn replace-first-with-currency [row]
   (assoc row 0 (currencies (:row-desc (first row)))) )
@@ -80,14 +81,15 @@
        (map replace-first-with-currency)))
 
 (defn get-all [filename]
-  ;(filter #(= "Rain of Clarity" (second %))
-  (remove #(= "There were no sales during this period" (second %))
-    (remove #(= "" (second %))
-      (partition 2
-        (flatten
-          (for [row (curr-books-map filename)]
-            (for [book (rest row)]
-              [(first row) (book :row-desc)])))))))
+  (->>
+    (for [row (curr-books-map filename)
+          book (rest row)]
+          [(first row) (book :row-desc)])
+    (flatten)
+    (partition 2)
+    (remove #(= "" (second %)))
+    (remove #(= "There were no sales during this period" (second %)))))
+    ;(filter #(= "Rain of Clarity" (second %))
 
 (def all-kdp (partition 2
                 (flatten

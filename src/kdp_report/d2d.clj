@@ -1,4 +1,4 @@
-(ns kdp-report.kdp
+(ns kdp-report.d2d
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [clojure.pprint :refer :all]))
@@ -18,14 +18,18 @@
   [StartDate	EndDate	Publisher	TitleID	ISBN	Title	PrimaryAuthor	Distributor	Vendor	Country	UnitsSold	UnitsReturned	NetUnitSales	ListPricePerUnit	CurrencyCode	OfferPricePerUnit	RoyaltyPercent	SalesChannelFeeTaxesPerUnit	SalesChannelRevenuePerUnit	ExtendedSalesChannelRevenue	SalesChannelShare	D2DShare	PublisherShare	PublisherShareUSDestimated	Verified])
 
 (def rows
-  (rest
+  (->>
     (with-open [in-file (io/reader "/Users/adrian.osullivan/Dropbox/kdp/2016-01-rawdata.csv")]
-      (doall
-        (csv/read-csv in-file)))))
+      (doall (csv/read-csv in-file)))
+    (rest)))
+
+(def books
+  (->>
+    (for [row rows]
+      (apply ->Row (flatten row)))
+    (map #(into {} %))))
 
 
-(apply ->Row (flatten (first rows)))
 
-
-(:Title row)
+(:Title  (second books) )
 
