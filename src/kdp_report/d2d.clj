@@ -17,19 +17,43 @@
 (defrecord Row
   [StartDate	EndDate	Publisher	TitleID	ISBN	Title	PrimaryAuthor	Distributor	Vendor	Country	UnitsSold	UnitsReturned	NetUnitSales	ListPricePerUnit	CurrencyCode	OfferPricePerUnit	RoyaltyPercent	SalesChannelFeeTaxesPerUnit	SalesChannelRevenuePerUnit	ExtendedSalesChannelRevenue	SalesChannelShare	D2DShare	PublisherShare	PublisherShareUSDestimated	Verified])
 
-(def rows
+(defn read-rows [filename]
   (->>
-    (with-open [in-file (io/reader "/Users/adrian.osullivan/Dropbox/kdp/2016-01-rawdata.csv")]
+    (with-open [in-file (io/reader filename)]
       (doall (csv/read-csv in-file)))
     (rest)))
 
-(def books
+(defn books-ext [filename]
   (->>
-    (for [row rows]
+    (for [row (read-rows filename)]
       (apply ->Row (flatten row)))
     (map #(into {} %))))
 
+(defn books-all [filename]
+  (map (fn [book] (select-keys book [:Title :UnitsSold :CurrencyCode :Country :Vendor]))
+    (books-ext filename)))
 
+(defn parse-int [s]
+  (Integer/parseInt (re-find #"\A-?\d+" s)))
 
-(:Title  (second books) )
+(defn expand-units-sold [books]
+  (map (fn [book] (select-keys book [:Title :CurrencyCode :Country :Vendor]))
+     (flatten
+       (for [book books]
+         (let [n (parse-int (:UnitsSold book))]
+           (if (> n  1)  (repeat n book) book))))))
+
+(def books
+  (->>
+    (map books-all filenames)
+    (map expand-units-sold )
+    (flatten)))
+
+(group-by :Title books)
+
+;todo
+; expand units sold
+; add country code to kdp
+; merge the two reports - make the kdp a proper map with keys and leave group-by till the end
+
 
