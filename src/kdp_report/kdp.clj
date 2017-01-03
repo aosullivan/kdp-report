@@ -4,7 +4,7 @@
 
 ;download 'prior months royalties one by one'
 
-(def filenames
+(def kdp-filenames
   ["/Users/adrian.osullivan/Dropbox/kdp/kdp-report-1-2016.xls"
    "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-2-2016.xls"
    "/Users/adrian.osullivan/Dropbox/kdp/kdp-report-3-2016.xls"
@@ -108,7 +108,7 @@
 (def all-kdp
   (partition 2
     (flatten
-      (map get-all filenames))))
+      (map get-all kdp-filenames))))
 
 (defn to-book-map [[curr title]]
   (assoc {} :Title title
@@ -117,8 +117,7 @@
             :Vendor "Amazon.com"))
 
 (def kindle-books
-  (map to-book-map
-    (map vec all-kdp)))
-
-
-kindle-books
+  (->>
+    (map vec all-kdp)
+    (map to-book-map)
+    (flatten)))

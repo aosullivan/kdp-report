@@ -6,7 +6,7 @@
 ; go to statements -> downloads and download each 'sales report'
 ; or just do raw sales data by month
 
-(def filenames
+(def d2d-filenames
   ["/Users/adrian.osullivan/Dropbox/kdp/2016-01-rawdata.csv"
    "/Users/adrian.osullivan/Dropbox/kdp/2016-02-rawdata.csv"
    "/Users/adrian.osullivan/Dropbox/kdp/2016-03-rawdata.csv"
@@ -45,11 +45,11 @@
 
 (def d2d-books
   (->>
-    (map books-all filenames)
+    (map books-all d2d-filenames)
     (map expand-units-sold )
     (flatten)))
 
-;(group-by :Title books)
+
 
 
 
