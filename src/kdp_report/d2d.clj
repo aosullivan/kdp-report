@@ -43,17 +43,13 @@
          (let [n (parse-int (:UnitsSold book))]
            (if (> n  1)  (repeat n book) book))))))
 
-(def books
+(def d2d-books
   (->>
     (map books-all filenames)
     (map expand-units-sold )
     (flatten)))
 
-(group-by :Title books)
+;(group-by :Title books)
 
-;todo
-; expand units sold
-; add country code to kdp
-; merge the two reports - make the kdp a proper map with keys and leave group-by till the end
 
 

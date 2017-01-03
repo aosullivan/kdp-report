@@ -31,6 +31,20 @@
                  "Amazon Kindle BR Store" "BRL"
                  "Amazon Kindle MX Store" "MXN"})
 
+(def currency-maps {"USD" {:CurrencyCode "USD", :Country "US"}
+                    "GBP" {:CurrencyCode "GBP", :Country "GB"}
+                    "EUR (Germany)" {:CurrencyCode "EUR", :Country "DE"}
+                    "EUR (France)" {:CurrencyCode "EUR", :Country "FR"}
+                    "JPY" {:CurrencyCode "JPY", :Country "JP"}
+                    "CAD" {:CurrencyCode "CAD", :Country "CA"}
+                    "EUR (Italy)" {:CurrencyCode "EUR", :Country "IT"}
+                    "EUR (Spain)" {:CurrencyCode "EUR", :Country "ES"}
+                    "INR" {:CurrencyCode "INR", :Country "IN"}
+                    "AUD" {:CurrencyCode "AUD", :Country "AU"}
+                    "EUR (Netherlands)" {:CurrencyCode "EUR", :Country "NE"}
+                    "BRL" {:CurrencyCode "BRL", :Country "BR"}
+                    "MXN" {:CurrencyCode "MXN", :Country "MX"}})
+
 (defn is-royalty-row? [rrow]
   (boolean (re-find #"Total Royalty" (rrow :row-desc))))
 
@@ -84,18 +98,27 @@
   (->>
     (for [row (curr-books-map filename)
           book (rest row)]
-          [(first row) (book :row-desc)])
+      [(first row) (book :row-desc)])
     (flatten)
     (partition 2)
     (remove #(= "" (second %)))
     (remove #(= "There were no sales during this period" (second %)))))
     ;(filter #(= "Rain of Clarity" (second %))
 
-(def all-kdp (partition 2
-                (flatten
-                  (map get-all filenames))))
+(def all-kdp
+  (partition 2
+    (flatten
+      (map get-all filenames))))
 
-(group-by second all-kdp)
+(defn to-book-map [[curr title]]
+  (assoc {} :Title title
+            :CurrencyCode (:CurrencyCode (currency-maps curr))
+            :Country (:Country (currency-maps curr))
+            :Vendor "Amazon.com"))
+
+(def kindle-books
+  (map to-book-map
+    (map vec all-kdp)))
 
 
-
+kindle-books
