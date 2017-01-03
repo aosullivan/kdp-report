@@ -1,6 +1,5 @@
 (ns kdp-report.kdp
-  (:require [dk.ative.docjure.spreadsheet :refer :all]
-            [clojure.pprint :refer :all] ))
+  (:require [dk.ative.docjure.spreadsheet :refer :all]))
 
 ;download 'prior months royalties one by one'
 
